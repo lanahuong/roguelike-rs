@@ -1,0 +1,35 @@
+#+TITLE: Roguelike Rust tuto
+
+* Game display
+
+We use ~bracket-lib~ to display the game. It provides an interface to print things in the terminal. It uses ~crossterm~ as a backend to manipulate the terminal.
+
+The function ~main_loop~, that take a terminal context and a struct that implements the trait ~GameState~ as arguments, handles the creation of the console and calls at fixed intervals the ~tick~ function of the ~GameState~ struct. We use the terminal context in the ~tick~ function to render things on screen: a glyph with a foreground and background color. We also use it to read input key strokes that move the player.
+
+* Entity Component System (ECS)
+
+** Principle
+An ECS is a pattern that uses composition to make varied entities in the game. An entity is something (a character, a tree, an object...) made of one or more components that describe it. Components are datatypes without behavior. A behavior is implemented in a System that matches with entities having a certain set of components.
+
+With this system, data and behavior are completely decoupled.
+
+Example:
+- components: Orc, Human, Archer, Barbarian, Position, Stats, Renderable, Player...
+- entities:
+  - ArcherOrc(Orc, Archer, Position, Stats, Renderable)
+  - ArcherHuman(Human, Archer, Postion, Stats, Renderable)
+  - BarbarianOrc(Orc, Barbarian, Position, Stats, Renderable, Player)
+- systems: Attack(Position, Stats, Renderable)
+
+When a behavior does not depend on anything external to the ECS, it is implemented as a system. When it has external dependencies, it is usually implemented outside the ECS.
+
+** specs
+We use ~specs~ to manage the ECS.
+
+A component is a structure that implement the ~Component~ trait (can be derived) and can hold data (but not always). A ~Component~ has to be registered in the ECS world with ~ecs.register::<ComponentName>()~. Then, we can create a entities using the builder pattern: ~ecs.create_entity().with(ComponentA{}).with(ComponentB).build()~.
+
+We can access components of entities in the ECS with the functions ~ecs.write_storage::<ComponentName>()~ and ~ecs.read_storage::<ComponentName>()~, and filter entities that have some components with the ~join()~ function (on a tuple).
+
+A system is a struct that implements the ~System~ trait: it specifies the data needs to read and write and a ~run~ function that filters entities based on components and applies the behavior.
+
+Here, we implemented movement to the left for enemies in a system (~LeftWalkers~) and identify the entities with the component ~LeftMover~. However, rendering, which only applies if an entity has a ~Position~ and a ~Renderable~ ~Component~, and moving the player, which has the ~Player~ ~Component~, are not implemented as systems because they rely on the terminal for input and output.
