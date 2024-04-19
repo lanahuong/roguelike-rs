@@ -9,6 +9,13 @@ struct State {
     ecs: World,
 }
 
+/// The types of tiles
+#[derive(Clone, PartialEq)]
+enum TileType {
+    Floor,
+    Wall,
+}
+
 /// A component for the position
 #[derive(Component)]
 struct Position {
@@ -51,12 +58,76 @@ impl<'a> System<'a> for LeftWalker {
     }
 }
 
+/// Linearize the coordinates in the map
+pub fn xy_idx(x: i32, y: i32) -> usize {
+    (y as usize * 80) + x as usize
+}
+
+/// Create a new random map
+fn new_map() -> Vec<TileType> {
+    let mut map = vec![TileType::Floor; 80 * 50];
+
+    // Add walls around the map
+    for x in 0..80 {
+        map[xy_idx(x, 0)] = TileType::Wall;
+        map[xy_idx(x, 49)] = TileType::Wall;
+    }
+    for y in 0..50 {
+        map[xy_idx(0, y)] = TileType::Wall;
+        map[xy_idx(79, y)] = TileType::Wall;
+    }
+
+    // Add random walls
+    let mut rng = RandomNumberGenerator::new();
+
+    for _ in 0..400 {
+        let x = rng.roll_dice(1,79);
+        let y = rng.roll_dice(1,49);
+        let idx = xy_idx(x,y);
+        if idx != xy_idx(40,25) {
+            map[idx] = TileType::Wall;
+        }
+    }
+
+    map
+}
+
 impl State {
     /// Runs the systems in the game state
     fn run_systems(&mut self) {
         let mut lw = LeftWalker {};
         lw.run_now(&self.ecs);
         self.ecs.maintain();
+    }
+}
+
+fn draw_map(map: &[TileType], ctx: &mut BTerm) {
+    let mut y = 0;
+    let mut x = 0;
+
+    for tile in map.iter() {
+        match tile {
+            TileType::Floor => ctx.set(
+                x,
+                y,
+                RGB::from_f32(0.5, 0.5, 0.5),
+                RGB::from_f32(0., 0., 0.),
+                to_cp437('.'),
+            ),
+            TileType::Wall => ctx.set(
+                x,
+                y,
+                RGB::from_f32(0., 1., 0.),
+                RGB::from_f32(0., 0., 0.),
+                to_cp437('#'),
+            ),
+        };
+
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
     }
 }
 
@@ -68,6 +139,9 @@ impl GameState for State {
         // Evolve the game state
         player_input(self, ctx);
         self.run_systems();
+
+        let map = self.ecs.fetch::<Vec<TileType>>();
+        draw_map(&map, ctx);
 
         // Display entities with a position that can be rendered
         let positions = self.ecs.read_storage::<Position>();
@@ -82,10 +156,15 @@ impl GameState for State {
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
+    let map = ecs.fetch::<Vec<TileType>>();
 
     for (_, pos) in (&mut players, &mut positions).join() {
-        pos.x = min(79, max(0, pos.x + delta_x));
-        pos.y = min(49, max(0, pos.y + delta_y));
+        let dest_x = pos.x + delta_x;
+        let dest_y = pos.y + delta_y;
+        if map[xy_idx(dest_x, dest_y)] != TileType::Wall {
+            pos.x = min(79, max(0, pos.x + delta_x));
+            pos.y = min(49, max(0, pos.y + delta_y));
+        }
     }
 }
 
@@ -117,6 +196,9 @@ fn main() -> BError {
     gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
 
+    // Store a map
+    gs.ecs.insert(new_map());
+
     // Create the player entity
     gs.ecs
         .create_entity()
@@ -128,20 +210,6 @@ fn main() -> BError {
         })
         .with(Player {})
         .build();
-
-    // Create monsters entities that move left
-    for i in 0..10 {
-        gs.ecs
-            .create_entity()
-            .with(Position { x: i * 7, y: 20 })
-            .with(Renderable {
-                glyph: to_cp437('☺'),
-                fg: RGB::named(RED),
-                bg: RGB::named(BLACK),
-            })
-            .with(LeftMover {})
-            .build();
-    }
 
     // Call the game loop which calls the state handler every tick
     main_loop(context, gs)
