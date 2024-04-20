@@ -11,7 +11,7 @@ mod rect;
 pub use rect::*;
 
 /// The game state
-struct State {
+pub struct State {
     /// The ECS system
     ecs: World,
 }
@@ -32,8 +32,8 @@ impl GameState for State {
         player_input(self, ctx);
         self.run_systems();
 
-        let map = self.ecs.fetch::<Vec<TileType>>();
-        draw_map(&map, ctx);
+        let map = self.ecs.fetch::<Map>();
+        map.draw_map(ctx);
 
         // Display entities with a position that can be rendered
         let positions = self.ecs.read_storage::<Position>();
@@ -60,11 +60,11 @@ fn main() -> BError {
     gs.ecs.register::<Player>();
 
     // Create a random map
-    let (rooms, map) = new_map_rooms_and_corridors(30);
+    let map = Map::new_map_rooms_and_corridors(30);
+    // Get the initial position of the player in the center of the first room
+    let player_pos = if map.rooms.is_empty() {(40,25)} else {map.rooms[0].center()};
     // Store a map
     gs.ecs.insert(map);
-    // Get the initial position of the player in the center of the first room
-    let player_pos = rooms[0].center();
 
     // Create the player entity
     gs.ecs
