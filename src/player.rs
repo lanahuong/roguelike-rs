@@ -1,7 +1,7 @@
+use super::{xy_idx, Player, Position, State, TileType};
 use bracket_lib::prelude::*;
-use std::cmp::{min, max};
-use super::{Position, Player, TileType, xy_idx, State};
 use specs::{prelude::*, World};
+use std::cmp::{max, min};
 
 /// Move the player inside the console boundaries
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
@@ -31,4 +31,3 @@ pub fn player_input(gs: &mut State, ctx: &mut BTerm) {
         }
     }
 }
-

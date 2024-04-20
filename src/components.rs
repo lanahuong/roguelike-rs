@@ -1,5 +1,5 @@
-use specs::prelude::*;
 use bracket_lib::prelude::*;
+use specs::prelude::*;
 use specs_derive::Component;
 
 /// A component for the position

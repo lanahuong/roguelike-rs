@@ -2,11 +2,13 @@ use bracket_lib::prelude::*;
 use specs::{prelude::*, World};
 
 mod components;
-use components::*;
+pub use components::*;
 mod map;
-use map::*;
+pub use map::*;
 mod player;
-use player::*;
+pub use player::*;
+mod rect;
+pub use rect::*;
 
 /// The game state
 struct State {
@@ -57,16 +59,23 @@ fn main() -> BError {
     gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
 
+    // Create a random map
+    let (rooms, map) = new_map_rooms_and_corridors(30);
     // Store a map
-    gs.ecs.insert(new_map());
+    gs.ecs.insert(map);
+    // Get the initial position of the player in the center of the first room
+    let player_pos = rooms[0].center();
 
     // Create the player entity
     gs.ecs
         .create_entity()
-        .with(Position { x: 40, y: 25 })
+        .with(Position {
+            x: player_pos.0,
+            y: player_pos.1,
+        })
         .with(Renderable {
             glyph: to_cp437('@'),
-            fg: RGB::named(YELLOW),
+            fg: RGB::named(GREEN),
             bg: RGB::named(BLACK),
         })
         .with(Player {})
