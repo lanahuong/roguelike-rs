@@ -9,6 +9,8 @@ mod player;
 pub use player::*;
 mod rect;
 pub use rect::*;
+mod visibility_system;
+use visibility_system::VisibilitySytem;
 
 /// The game state
 pub struct State {
@@ -19,6 +21,8 @@ pub struct State {
 impl State {
     /// Runs the systems in the game state
     fn run_systems(&mut self) {
+        let mut vis = VisibilitySytem {};
+        vis.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -32,8 +36,8 @@ impl GameState for State {
         player_input(self, ctx);
         self.run_systems();
 
-        let map = self.ecs.fetch::<Map>();
-        map.draw_map(ctx);
+        //let map = self.ecs.fetch::<Map>();
+        draw_map(&self.ecs, ctx);
 
         // Display entities with a position that can be rendered
         let positions = self.ecs.read_storage::<Position>();
@@ -58,11 +62,16 @@ fn main() -> BError {
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
+    gs.ecs.register::<Viewshed>();
 
     // Create a random map
     let map = Map::new_map_rooms_and_corridors(30);
     // Get the initial position of the player in the center of the first room
-    let player_pos = if map.rooms.is_empty() {(40,25)} else {map.rooms[0].center()};
+    let player_pos = if map.rooms.is_empty() {
+        (40, 25)
+    } else {
+        map.rooms[0].center()
+    };
     // Store a map
     gs.ecs.insert(map);
 
@@ -79,6 +88,11 @@ fn main() -> BError {
             bg: RGB::named(BLACK),
         })
         .with(Player {})
+        .with(Viewshed {
+            visible_tiles: Vec::new(),
+            range: 8,
+            dirty: true,
+        })
         .build();
 
     // Call the game loop which calls the state handler every tick

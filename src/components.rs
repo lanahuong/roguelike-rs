@@ -27,3 +27,11 @@ pub struct LeftMover {}
 /// A component for the entity controlled by the player
 #[derive(Component)]
 pub struct Player {}
+
+/// A component for characters with a field of view
+#[derive(Component)]
+pub struct Viewshed {
+    pub visible_tiles: Vec<Point>,
+    pub range: i32,
+    pub dirty: bool,
+}

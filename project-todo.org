@@ -33,3 +33,10 @@ We can access components of entities in the ECS with the functions ~ecs.write_st
 A system is a struct that implements the ~System~ trait: it specifies the data needs to read and write and a ~run~ function that filters entities based on components and applies the behavior.
 
 Here, we implemented movement to the left for enemies in a system (~LeftWalkers~) and identify the entities with the component ~LeftMover~. However, rendering, which only applies if an entity has a ~Position~ and a ~Renderable~ ~Component~, and moving the player, which has the ~Player~ ~Component~, are not implemented as systems because they rely on the terminal for input and output.
+
+* The Deref trait
+
+This trait overloads the ~*~ operator.
+
+In the ~run~ function of ~VisibilitySystem~ the function ~field_of_view~ takes a ~&*map~ as its last argument. It is odd to dereference a map to take a reference immediately. In reality, the type of ~map~ is ~Read<'a, Map, PanicHandler>~ which implements the ~Deref~ trait to return a the ~Map~ object it contains. Therefore ~*map~ returns a ~Map~ and so ~&*map~ returns a ~&Map~, a reference to a ~Map~.
+
