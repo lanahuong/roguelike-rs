@@ -1,4 +1,4 @@
-use super::{Map, Player, Position, State, TileType, Viewshed};
+use super::{Map, Player, Position, RunState, State, TileType, Viewshed};
 use bracket_lib::prelude::*;
 use specs::{prelude::*, World};
 use std::cmp::{max, min};
@@ -16,6 +16,9 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         if map.tiles[map.xy_idx(dest_x, dest_y)] != TileType::Wall {
             pos.x = min(79, max(0, pos.x + delta_x));
             pos.y = min(49, max(0, pos.y + delta_y));
+            let mut ppos = ecs.write_resource::<Point>();
+            ppos.x = pos.x;
+            ppos.y = pos.y;
         }
 
         viewshed.dirty = true;
@@ -23,14 +26,16 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 }
 
 /// Apply effects from player inputs
-pub fn player_input(gs: &mut State, ctx: &mut BTerm) {
-    if let Some(key) = ctx.key {
-        match key {
+pub fn player_input(gs: &mut State, ctx: &mut BTerm) -> RunState {
+    match ctx.key {
+        None => { return RunState::Paused; }
+        Some(key) => match key {
             VirtualKeyCode::A => try_move_player(-1, 0, &mut gs.ecs),
             VirtualKeyCode::W => try_move_player(0, -1, &mut gs.ecs),
             VirtualKeyCode::S => try_move_player(0, 1, &mut gs.ecs),
             VirtualKeyCode::D => try_move_player(1, 0, &mut gs.ecs),
-            _ => {}
+            _ => { return RunState::Paused; }
         }
     }
+    RunState::Running
 }

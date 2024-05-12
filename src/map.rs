@@ -10,6 +10,7 @@ pub enum TileType {
     Wall,
 }
 
+/// A map
 pub struct Map {
     pub tiles: Vec<TileType>,
     pub rooms: Vec<Rect>,
@@ -53,7 +54,6 @@ impl Map {
 
         // Add random walls
         let mut rng = RandomNumberGenerator::new();
-
         for _ in 0..400 {
             let x = rng.roll_dice(1, 79);
             let y = rng.roll_dice(1, 49);
@@ -107,6 +107,7 @@ impl Map {
             revealed_tiles: vec![false; 80 * 50],
             visible_tiles: vec![false; 80 * 50],
         };
+
         let mut rng = RandomNumberGenerator::new();
         const MIN_SIZE: i32 = 6;
         const MAX_SIZE: i32 = 10;
@@ -154,10 +155,11 @@ pub fn draw_map(ecs: &World, ctx: &mut BTerm) {
     let mut players = ecs.write_storage::<Player>();
     let map = ecs.fetch::<Map>();
 
-    for (_, viewshed) in (&mut players, &mut viewsheds).join() {
+    for (_, _viewshed) in (&mut players, &mut viewsheds).join() {
         let mut y = 0;
         let mut x = 0;
 
+        // Only show visited tiles in grey and currently visible tiles in yellow
         for (idx, tile) in map.tiles.iter().enumerate() {
             if map.revealed_tiles[idx] {
                 let glyph;

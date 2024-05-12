@@ -35,3 +35,13 @@ pub struct Viewshed {
     pub range: i32,
     pub dirty: bool,
 }
+
+/// A component for monster entities
+#[derive(Component)]
+pub struct Monster {}
+
+/// A component to name entities
+#[derive(Component)]
+pub struct Name {
+    pub name: String,
+}
